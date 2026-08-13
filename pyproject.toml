@@ -1,0 +1,9 @@
+[project]
+name = "flight-delay-risk-training"
+version = "0.1.0"
+description = "Deterministic flight delay risk classification training project."
+requires-python = ">=3.13"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
