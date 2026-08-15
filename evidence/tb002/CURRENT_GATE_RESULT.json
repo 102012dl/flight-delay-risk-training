@@ -1,0 +1,10 @@
+{
+  "tb_id": "TB-002",
+  "gate": "VALIDATION_ONLY",
+  "status": "PASS",
+  "human_review_complete": true,
+  "decision": "APPROVE",
+  "upstream_repository": "https://github.com/102012dl/flight-delay-risk-training",
+  "upstream_evidence": "evidence/EVIDENCE_PACK.md",
+  "historical_tb002_package_recovered": false
+}

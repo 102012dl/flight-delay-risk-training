@@ -1,0 +1,7 @@
+# SHA-256 manifest for TB-002 Human Review Completion Layer.
+# SHA256_MANIFEST.txt is excluded from this manifest.
+
+ff37408b8b362feb368896f96f648f3131801d75681888ad3c949a5e6f12563f  README.md
+ead655e901a174523897c75ee0071e897c3c28da2b56724416784963309433df  human_review.json
+ed5daeba012e8418370d4d8a012966e41f5061d761eb641a3203da8d90cf843e  validate_human_review.py
+435105463ddbb29f4215158de636f6226a8e7c07c1e1d0cd159c7e0988398a85  CURRENT_GATE_RESULT.json
