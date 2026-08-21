@@ -34,3 +34,7 @@ def test_t_07_delay_at_60_with_weather_risk_is_high() -> None:
 
 def test_t_08_delay_at_60_with_crew_issue_is_high() -> None:
     assert classify_delay_risk(60, False, True) == "HIGH"
+
+
+def test_t_09_delay_at_60_without_risks_is_medium():
+    assert classify_delay_risk(60, False, False) == "MEDIUM"
