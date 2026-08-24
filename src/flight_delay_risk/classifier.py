@@ -7,6 +7,13 @@ def classify_delay_risk(
     crew_issue: bool,
 ) -> str:
     """Classify flight delay risk as LOW, MEDIUM, or HIGH."""
+    if not isinstance(delay_minutes, int) or isinstance(delay_minutes, bool):
+        raise TypeError
+    if not isinstance(weather_risk, bool):
+        raise TypeError
+    if not isinstance(crew_issue, bool):
+        raise TypeError
+
     if delay_minutes < 0:
         raise ValueError
 

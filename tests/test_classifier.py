@@ -38,3 +38,23 @@ def test_t_08_delay_at_60_with_crew_issue_is_high() -> None:
 
 def test_t_09_delay_at_60_without_risks_is_medium():
     assert classify_delay_risk(60, False, False) == "MEDIUM"
+
+
+def test_t_10_non_integer_delay_raises_type_error() -> None:
+    with pytest.raises(TypeError):
+        classify_delay_risk("60", False, False)
+
+
+def test_t_11_boolean_delay_raises_type_error() -> None:
+    with pytest.raises(TypeError):
+        classify_delay_risk(True, False, False)
+
+
+def test_t_12_non_boolean_weather_risk_raises_type_error() -> None:
+    with pytest.raises(TypeError):
+        classify_delay_risk(60, "yes", False)
+
+
+def test_t_13_non_boolean_crew_issue_raises_type_error() -> None:
+    with pytest.raises(TypeError):
+        classify_delay_risk(60, False, 1)
