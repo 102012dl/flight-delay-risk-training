@@ -58,3 +58,7 @@ def test_t_12_non_boolean_weather_risk_raises_type_error() -> None:
 def test_t_13_non_boolean_crew_issue_raises_type_error() -> None:
     with pytest.raises(TypeError):
         classify_delay_risk(60, False, 1)
+
+
+def test_t_14_delay_at_119_without_risks_is_medium() -> None:
+    assert classify_delay_risk(119, False, False) == "MEDIUM"
