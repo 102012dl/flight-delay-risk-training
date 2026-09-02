@@ -62,3 +62,11 @@ def test_t_13_non_boolean_crew_issue_raises_type_error() -> None:
 
 def test_t_14_delay_at_119_without_risks_is_medium() -> None:
     assert classify_delay_risk(119, False, False) == "MEDIUM"
+
+
+def test_t_15_delay_at_59_with_weather_risk_is_medium() -> None:
+    assert classify_delay_risk(59, True, False) == "MEDIUM"
+
+
+def test_t_16_delay_at_59_with_crew_issue_is_medium() -> None:
+    assert classify_delay_risk(59, False, True) == "MEDIUM"
