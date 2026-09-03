@@ -70,3 +70,7 @@ def test_t_15_delay_at_59_with_weather_risk_is_medium() -> None:
 
 def test_t_16_delay_at_59_with_crew_issue_is_medium() -> None:
     assert classify_delay_risk(59, False, True) == "MEDIUM"
+
+
+def test_t_17_delay_at_30_with_both_risks_is_medium() -> None:
+    assert classify_delay_risk(30, True, True) == "MEDIUM"
