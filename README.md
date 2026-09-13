@@ -88,3 +88,47 @@ and passes valid records to the existing Week-1 classifier.
   analysis-ready records; neither SQL nor pandas is implemented yet.
 - Not implemented: machine learning, deployment, APIs, dashboards, and
   MLOps.
+
+## W2D2 Operational Analytics
+
+W2D2 adds a small, deterministic analytics layer for the validated synthetic
+records. The flow is:
+
+```text
+Validated FlightOperationalRecord
+        ↓
+Existing Week-1 classifier
+        ↓
+In-memory SQLite analytical table
+        ↓
+SQL queries and pandas DataFrames
+        ↓
+OCC-style KPI and EDA outputs
+```
+
+`flight_delay_risk.analytics.OperationalAnalytics` accepts only validated
+`FlightOperationalRecord` values. It stores the already-derived
+`risk_category` in SQLite and provides SQL-backed counts, averages, threshold
+queries, operational-condition groups, and HIGH-risk extraction. pandas adds
+median delay, KPI rates, risk and condition distributions, daily/hourly
+departure grouping, and analysis-ready DataFrames.
+
+Example:
+
+```python
+from flight_delay_risk import load_operational_csv
+from flight_delay_risk.analytics import build_analytics
+
+records = load_operational_csv("data/operational_flights.csv")
+analytics = build_analytics(records)
+print(analytics.kpi_summary())
+print(analytics.departures_by_hour())
+```
+
+The outputs describe only fields present in this dataset: delay minutes,
+scheduled departure, weather risk, crew issue, and derived risk category.
+OTP, actual movement performance, cancellations, diversions, passenger or
+financial impact, and network effects are not represented. This remains
+**SYNTHETIC TRAINING DATA — NOT REAL AIRLINE OPERATIONAL DATA**; machine
+learning, APIs, dashboards, deployment, and production airline readiness are
+outside W2D2.
