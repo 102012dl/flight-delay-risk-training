@@ -89,6 +89,27 @@ and passes valid records to the existing Week-1 classifier.
 - Not implemented: machine learning, deployment, APIs, dashboards, and
   MLOps.
 
+## W2D3 Leakage-controlled predictive baseline
+
+W2D3 adds a small educational predictive benchmark using deterministically
+generated synthetic aviation operational data (seed `42`, approximately 240
+records). The target is `severe_delay`, defined explicitly as
+`delay_minutes >= 60`. At prediction time, the model uses only `weather_risk`,
+`crew_issue`, and a derived `departure_hour`; `flight_id`, `delay_minutes`, and
+`risk_category` are excluded as identifiers or post-outcome fields.
+
+The benchmark compares `DummyClassifier(strategy="prior")` with a minimal
+`LogisticRegression`. Held-out evaluation reports recall as the primary metric
+because missing a severe delay is operationally important, with precision, F1,
+balanced accuracy, and a confusion matrix as supporting metrics. Logistic
+coefficients expose associations within this synthetic dataset; they are not
+causal effects.
+
+This is a synthetic educational benchmark, not production-validated ML or a
+real airline performance claim. It makes no business-impact or stable-
+generalization claim. The existing deterministic rule engine and this
+predictive model are separate artifacts: **RULE ENGINE != PREDICTIVE MODEL**.
+
 ## W2D2 Operational Analytics
 
 W2D2 adds a small, deterministic analytics layer for the validated synthetic
