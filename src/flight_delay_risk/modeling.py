@@ -5,6 +5,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from math import exp
 from typing import Any
 
 import pandas as pd
@@ -46,6 +47,60 @@ class EvaluationMetrics:
     f1: float
     balanced_accuracy: float
     confusion_matrix: tuple[tuple[int, int], tuple[int, int]]
+
+
+@dataclass(frozen=True)
+class EvaluationRow:
+    """One post-hoc, auditable prediction result from the test partition."""
+
+    flight_id: str
+    weather_risk: bool
+    crew_issue: bool
+    departure_hour: int
+    actual_target: int
+    predicted_target: int
+    error_class: str
+
+
+@dataclass(frozen=True)
+class ThresholdEvaluation:
+    """Metrics for one predefined educational probability threshold."""
+
+    threshold: float
+    metrics: EvaluationMetrics
+
+
+@dataclass(frozen=True)
+class FeatureExplanation:
+    """Non-causal interpretation of one fitted logistic coefficient."""
+
+    feature: str
+    coefficient: float
+    direction: str
+    odds_ratio: float
+
+
+ERROR_CLASS_INTERPRETATIONS = {
+    "TN": "correct non-severe prediction",
+    "FP": "non-severe case incorrectly flagged",
+    "FN": "severe-delay case missed",
+    "TP": "severe-delay case correctly flagged",
+}
+
+EDUCATIONAL_THRESHOLDS = (0.30, 0.50, 0.70)
+
+LIMITATIONS = {
+    "data": "synthetic data only",
+    "generator_risk": "MEDIUM",
+    "generalization": "MEDIUM / not established on real data",
+    "causality": "no causal interpretation",
+    "deployment": "no airline deployment claim",
+    "threshold": "no calibrated operational threshold",
+    "cost": "no monetary impact estimate",
+    "monitoring": "no production monitoring",
+    "validation": "no real-airline validation",
+    "automation": "not approved for autonomous operational action",
+}
 
 
 def generate_synthetic_training_frame(
@@ -137,17 +192,105 @@ def train_logistic_regression(split: TrainTestSplit) -> LogisticRegression:
 def evaluate_model(model: Any, split: TrainTestSplit) -> EvaluationMetrics:
     """Evaluate a fitted model on held-out data with an explicit metric contract."""
     predictions = model.predict(split.X_test)
-    matrix = confusion_matrix(split.y_test, predictions, labels=[0, 1])
+    return _metrics_from_predictions(split.y_test, predictions)
+
+
+def _metrics_from_predictions(
+    actual: pd.Series, predictions: Any
+) -> EvaluationMetrics:
+    """Build the existing metric contract from already-generated predictions."""
+    matrix = confusion_matrix(actual, predictions, labels=[0, 1])
     return EvaluationMetrics(
-        recall=float(recall_score(split.y_test, predictions, zero_division=0)),
-        precision=float(precision_score(split.y_test, predictions, zero_division=0)),
-        f1=float(f1_score(split.y_test, predictions, zero_division=0)),
-        balanced_accuracy=float(balanced_accuracy_score(split.y_test, predictions)),
+        recall=float(recall_score(actual, predictions, zero_division=0)),
+        precision=float(precision_score(actual, predictions, zero_division=0)),
+        f1=float(f1_score(actual, predictions, zero_division=0)),
+        balanced_accuracy=float(balanced_accuracy_score(actual, predictions)),
         confusion_matrix=(
             tuple(int(value) for value in matrix[0]),
             tuple(int(value) for value in matrix[1]),
         ),
     )
+
+
+def _error_class(actual: int, predicted: int) -> str:
+    """Return the standard confusion-matrix label for one prediction."""
+    return {(0, 0): "TN", (0, 1): "FP", (1, 0): "FN", (1, 1): "TP"}[
+        (int(actual), int(predicted))
+    ]
+
+
+def build_evaluation_rows(
+    model: Any, split: TrainTestSplit, frame: pd.DataFrame
+) -> tuple[EvaluationRow, ...]:
+    """Build post-hoc audit rows without changing the model feature matrix."""
+    required = {"flight_id", "weather_risk", "crew_issue", "scheduled_departure"}
+    missing = sorted(required - set(frame.columns))
+    if missing:
+        raise ValueError(f"frame is missing required columns: {', '.join(missing)}")
+    predictions = model.predict(split.X_test)
+    source = frame.loc[split.test_ids.index]
+    return tuple(
+        EvaluationRow(
+            flight_id=str(row.flight_id),
+            weather_risk=bool(row.weather_risk),
+            crew_issue=bool(row.crew_issue),
+            departure_hour=int(pd.to_datetime(row.scheduled_departure).hour),
+            actual_target=int(actual),
+            predicted_target=int(predicted),
+            error_class=_error_class(actual, predicted),
+        )
+        for (_, row), actual, predicted in zip(
+            source.iterrows(), split.y_test, predictions, strict=True
+        )
+    )
+
+
+def filter_evaluation_rows(
+    rows: tuple[EvaluationRow, ...], error_class: str
+) -> tuple[EvaluationRow, ...]:
+    """Return rows for one TN/FP/FN/TP class."""
+    if error_class not in ERROR_CLASS_INTERPRETATIONS:
+        raise ValueError("error_class must be one of TN, FP, FN, or TP")
+    return tuple(row for row in rows if row.error_class == error_class)
+
+
+def evaluate_fixed_thresholds(
+    model: LogisticRegression,
+    split: TrainTestSplit,
+    thresholds: tuple[float, ...] = EDUCATIONAL_THRESHOLDS,
+) -> tuple[ThresholdEvaluation, ...]:
+    """Evaluate predefined thresholds without selecting or optimizing one."""
+    if thresholds != EDUCATIONAL_THRESHOLDS:
+        raise ValueError("thresholds must remain the approved fixed educational set")
+    probabilities = model.predict_proba(split.X_test)[:, 1]
+    return tuple(
+        ThresholdEvaluation(
+            threshold=threshold,
+            metrics=_metrics_from_predictions(
+                split.y_test, (probabilities >= threshold).astype(int)
+            ),
+        )
+        for threshold in thresholds
+    )
+
+
+def explain_logistic_model(model: LogisticRegression) -> tuple[FeatureExplanation, ...]:
+    """Expose fitted associations, not causal effects or probabilities."""
+    coefficients = logistic_coefficients(model)
+    return tuple(
+        FeatureExplanation(
+            feature=feature,
+            coefficient=float(coefficient),
+            direction="positive" if coefficient > 0 else "negative",
+            odds_ratio=float(exp(coefficient)),
+        )
+        for feature, coefficient in coefficients.items()
+    )
+
+
+def limitations_metadata() -> dict[str, str]:
+    """Return the explicit non-production governance contract."""
+    return dict(LIMITATIONS)
 
 
 def logistic_coefficients(model: LogisticRegression) -> dict[str, float]:

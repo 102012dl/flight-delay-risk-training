@@ -2,15 +2,21 @@ import pandas as pd
 import pytest
 
 from flight_delay_risk.modeling import (
+    EDUCATIONAL_THRESHOLDS,
     FEATURE_COLUMNS,
     EvaluationMetrics,
+    build_evaluation_rows,
+    evaluate_fixed_thresholds,
     evaluate_model,
+    explain_logistic_model,
+    filter_evaluation_rows,
     generate_synthetic_training_frame,
     logistic_coefficients,
     prepare_features,
     split_features,
     train_dummy_classifier,
     train_logistic_regression,
+    limitations_metadata,
 )
 
 
@@ -68,3 +74,76 @@ def test_logistic_coefficients_match_approved_features():
     split = split_features(generate_synthetic_training_frame())
     coefficients = logistic_coefficients(train_logistic_regression(split))
     assert list(coefficients) == list(FEATURE_COLUMNS)
+
+
+def test_evaluation_rows_classify_all_confusion_matrix_cases():
+    frame = generate_synthetic_training_frame()
+    split = split_features(frame)
+    rows = build_evaluation_rows(train_logistic_regression(split), split, frame)
+    expected = {(0, 0): "TN", (0, 1): "FP", (1, 0): "FN", (1, 1): "TP"}
+    assert {row.error_class for row in rows} == set(expected.values())
+    assert all(expected[(row.actual_target, row.predicted_target)] == row.error_class for row in rows)
+
+
+def test_false_positive_and_false_negative_extraction_is_deterministic():
+    frame = generate_synthetic_training_frame()
+    split = split_features(frame)
+    rows = build_evaluation_rows(train_logistic_regression(split), split, frame)
+    assert len(filter_evaluation_rows(rows, "FP")) == 14
+    assert len(filter_evaluation_rows(rows, "FN")) == 3
+
+
+def test_evaluation_rows_contain_approved_audit_information():
+    frame = generate_synthetic_training_frame()
+    split = split_features(frame)
+    row = build_evaluation_rows(train_logistic_regression(split), split, frame)[0]
+    assert row.flight_id
+    assert row.departure_hour in range(24)
+    assert set(row.__dataclass_fields__) == {
+        "flight_id", "weather_risk", "crew_issue", "departure_hour",
+        "actual_target", "predicted_target", "error_class",
+    }
+
+
+def test_evaluation_preserves_exact_leakage_safe_feature_contract():
+    frame = generate_synthetic_training_frame()
+    split = split_features(frame)
+    assert list(split.X_train.columns) == list(FEATURE_COLUMNS)
+    assert set(split.X_train.columns).isdisjoint(
+        {"delay_minutes", "risk_category", "flight_id", "actual_target", "predicted_target", "error_class"}
+    )
+    build_evaluation_rows(train_logistic_regression(split), split, frame)
+
+
+def test_fixed_thresholds_are_predefined_and_reproducible():
+    split = split_features(generate_synthetic_training_frame())
+    model = train_logistic_regression(split)
+    first = evaluate_fixed_thresholds(model, split)
+    second = evaluate_fixed_thresholds(model, split)
+    assert tuple(result.threshold for result in first) == EDUCATIONAL_THRESHOLDS
+    assert first == second
+    assert first[0].metrics.recall == pytest.approx(0.8571428571)
+    assert first[1].metrics.confusion_matrix == ((27, 14), (3, 4))
+
+
+def test_threshold_set_cannot_be_optimized_or_changed():
+    split = split_features(generate_synthetic_training_frame())
+    with pytest.raises(ValueError):
+        evaluate_fixed_thresholds(train_logistic_regression(split), split, (0.5,))
+
+
+def test_explainability_contains_coefficients_directions_and_odds_ratios():
+    split = split_features(generate_synthetic_training_frame())
+    explanations = explain_logistic_model(train_logistic_regression(split))
+    assert tuple(item.feature for item in explanations) == FEATURE_COLUMNS
+    assert explanations[0].coefficient == pytest.approx(1.1022, abs=1e-4)
+    assert explanations[0].direction == "positive"
+    assert explanations[0].odds_ratio == pytest.approx(3.0109, abs=1e-3)
+
+
+def test_limitations_metadata_exposes_non_production_boundaries():
+    limitations = limitations_metadata()
+    assert limitations["data"] == "synthetic data only"
+    assert limitations["generator_risk"] == "MEDIUM"
+    assert limitations["generalization"] == "MEDIUM / not established on real data"
+    assert limitations["automation"] == "not approved for autonomous operational action"

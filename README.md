@@ -153,3 +153,29 @@ financial impact, and network effects are not represented. This remains
 **SYNTHETIC TRAINING DATA — NOT REAL AIRLINE OPERATIONAL DATA**; machine
 learning, APIs, dashboards, deployment, and production airline readiness are
 outside W2D2.
+
+## W2D4 Evaluation and decision-support evidence
+
+W2D4 asks: **What does the baseline model's behaviour mean for an aviation
+operations decision-maker, where does it fail, and when should it not be
+trusted?** The held-out logistic benchmark produces TN=27, FP=14, FN=3,
+and TP=4: it detects 4 of 7 severe synthetic cases while generating 14
+false alerts. A false negative is a severe-delay case missed by the model;
+a false positive is a non-severe case incorrectly flagged. These support
+human review and hypothetical decision-support analysis only, not autonomous
+operational intervention or claims about real airline workload, cost, safety,
+or passenger impact.
+
+The fixed educational thresholds 0.30, 0.50, and 0.70 illustrate the
+recall/false-positive trade-off. No threshold is operationally recommended:
+real use would require real data, independent validation, calibrated
+probabilities, explicit costs, stakeholder requirements, and risk tolerance.
+
+Logistic coefficients describe fitted associations within this synthetic
+model, not causal effects, real-airline estimates, or operational probability
+guarantees. `departure_hour` is treated linearly and does not robustly model
+cyclic time-of-day behaviour. Synthetic-generator bias and small-segment
+overinterpretation remain material limitations. This is an educational,
+decision-support training artifact with no real-airline validation, production
+monitoring, or airline deployment claim. API/FastAPI, Docker, CI/CD, and
+deployment-oriented work remain reserved for W3.
