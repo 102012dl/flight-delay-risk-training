@@ -48,11 +48,55 @@ risk = classify_delay_risk(60, weather_risk=True, crew_issue=False)
 python -m pytest -v
 ```
 
+## Typed FastAPI boundary (W3 / Step 11B)
+
+The training classifier is exposed through a small typed REST boundary:
+
+```text
+HTTP JSON request → strict Pydantic validation → FastAPI /risk adapter
+    → existing classify_delay_risk domain function → minimal typed response
+```
+
+Endpoints:
+
+- `GET /health` returns `{"status":"ok"}` with no database, credentials,
+  network call, training, or persistence requirement.
+- `POST /risk` accepts `delay_minutes` (non-negative integer), `weather_risk`
+  (boolean), and `crew_issue` (boolean), and returns one `risk_category`.
+
+Run locally:
+
+```powershell
+python -m pip install -e ".[test]"
+uvicorn flight_delay_risk.api:app --reload
+```
+
+The API returns HTTP 422 for malformed JSON, missing or extra fields, negative
+delays, and incorrect types. It does not expose classifier internals or imply
+an operational airline safety decision. API tests cover health, LOW/MEDIUM/HIGH
+boundaries, strict validation, determinism, delegation, and side-effect
+expectations.
+
+CI is defined in `.github/workflows/test.yml`: GitHub Actions installs the
+project and test extra and runs the full pytest suite. For reproducible local
+packaging:
+
+```powershell
+docker build -t flight-delay-risk-training .
+docker run --rm -p 8000:8000 flight-delay-risk-training
+```
+
+The Dockerfile demonstrates packaging and local execution only; it is not a
+production-readiness, scalability, deployment, or security-certification
+claim. The service has no authentication and is intended for local training.
+
 ## Limitations
 
 - Deterministic rule-based classifier.
-- No API, UI, database, persistence, external services, or deployment.
+- No UI, database, persistence, external services, or deployment.
 - Created only for controlled software-engineering training.
+- The API is not real-airline validated, a calibrated operational threshold,
+  a causal model, autonomous operational action, or safety certification.
 
 ## Aviation Operational Data Foundation
 
@@ -86,8 +130,8 @@ and passes valid records to the existing Week-1 classifier.
   automated tests, and Git/evidence discipline.
 - Partial evidence: SQL/pandas readiness through a typed tabular contract and
   analysis-ready records; neither SQL nor pandas is implemented yet.
-- Not implemented: machine learning, deployment, APIs, dashboards, and
-  MLOps.
+- Not implemented: deployment, dashboards, and MLOps. The W3 API is a local
+  typed adapter, not a production service.
 
 ## W2D3 Leakage-controlled predictive baseline
 

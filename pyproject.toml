@@ -3,7 +3,15 @@ name = "flight-delay-risk-training"
 version = "0.1.0"
 description = "Deterministic flight delay risk classification training project."
 requires-python = ">=3.13"
-dependencies = ["pandas>=2.2", "scikit-learn>=1.5"]
+dependencies = [
+    "pandas>=2.2",
+    "scikit-learn>=1.5",
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30,<1",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.3,<9", "httpx>=0.27,<1"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
