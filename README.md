@@ -1,5 +1,27 @@
 # Flight Delay Risk Training
 
+## Portfolio landing page
+
+This repository demonstrates an end-to-end aviation delay-risk training
+system: validated synthetic operational data, deterministic domain rules,
+analytics, leakage-controlled baseline ML evaluation, a typed FastAPI boundary,
+automated regression tests, CI, and local Docker packaging. It is a training
+and decision-support artifact—not a production airline system.
+
+For a five-minute review, follow the [portfolio evidence index](docs/PORTFOLIO_INDEX.md),
+then the [recruiter-ready case study](docs/CASE_STUDY.md) and
+[governance, risk, and traceability package](docs/GOVERNANCE.md).
+
+### Verified W3 evidence
+
+- Accepted checkpoint: `w3-api-engineering`, commit `7cc8ac9a...`.
+- Full regression baseline: 79 passed, 0 failures.
+- CI runs the test suite on Python 3.13; Docker demonstrates local packaging
+  and execution.
+- The evidence is synthetic and local. No deployment, airline validation,
+  safety certification, production monitoring, or autonomous decision claim is
+  made.
+
 ## Objective
 
 Provide a small deterministic classifier for flight delay risk based on delay
@@ -128,10 +150,10 @@ and passes valid records to the existing Week-1 classifier.
 - Direct evidence: Python data processing, structured operational records,
   data-quality validation, aviation delay/weather/crew risk logic, focused
   automated tests, and Git/evidence discipline.
-- Partial evidence: SQL/pandas readiness through a typed tabular contract and
-  analysis-ready records; neither SQL nor pandas is implemented yet.
-- Not implemented: deployment, dashboards, and MLOps. The W3 API is a local
-  typed adapter, not a production service.
+- Direct evidence: in-memory SQLite and pandas analytics over validated
+  records, alongside a typed tabular contract and analysis-ready outputs.
+- Not implemented: deployment, dashboards, and production MLOps. The W3 API is
+  a local typed adapter, not a production service.
 
 ## W2D3 Leakage-controlled predictive baseline
 
@@ -221,5 +243,6 @@ guarantees. `departure_hour` is treated linearly and does not robustly model
 cyclic time-of-day behaviour. Synthetic-generator bias and small-segment
 overinterpretation remain material limitations. This is an educational,
 decision-support training artifact with no real-airline validation, production
-monitoring, or airline deployment claim. API/FastAPI, Docker, CI/CD, and
-deployment-oriented work remain reserved for W3.
+monitoring, or airline deployment claim. API/FastAPI, Docker, and CI/CD are
+implemented as local engineering evidence; production deployment remains out
+of scope.
